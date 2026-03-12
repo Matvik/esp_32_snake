@@ -1,0 +1,111 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <defs>
+    <style>
+      .bg       { fill: #f5f8fc; }
+      .panel    { fill: #ffffff; stroke: #d6e0ef; stroke-width: 2; }
+      .esp      { fill: #1f3045; }
+      .oled     { fill: #252d36; }
+      .btn      { fill: #f8fafd; stroke: #b8cde0; stroke-width: 2; }
+      .pin      { fill: #e8f0fb; stroke: #9ab2cc; stroke-width: 1.2; }
+      .titleTxt { font: 700 30px "Segoe UI", sans-serif; fill: #1e2b39; }
+      .subtxt   { font: 500 15px "Segoe UI", sans-serif; fill: #4a607a; }
+      .blkTitle { font: 700 18px "Segoe UI", sans-serif; fill: #ffffff; }
+      .pinTxt   { font: 600 13px "Segoe UI", sans-serif; fill: #182d42; }
+      .btnTitle { font: 600 14px "Segoe UI", sans-serif; fill: #253545; }
+      .wire     { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="760"/>
+  <text x="50" y="52" class="titleTxt">ESP32 Snake — Wiring Diagram</text>
+  <text x="50" y="76" class="subtxt">DOIT ESP32 DEVKIT V1  ·  OLED SSD1306  ·  2 push buttons</text>
+
+  <rect class="panel" x="30" y="100" width="1140" height="620" rx="14"/>
+
+  <!-- ESP32 BLOCK: x=60 y=130 w=300 h=540 -->
+  <rect class="esp" x="60" y="130" width="300" height="540" rx="14"/>
+  <text x="100" y="170" class="blkTitle">ESP32 DOIT DEVKIT V1</text>
+
+  <!-- Pins on right side, right edge x=372 -->
+  <!-- row spacing: 60px, first row y_center=220 -->
+  <rect class="pin" x="300" y="208" width="72" height="24" rx="5"/>
+  <text x="318" y="225" class="pinTxt">3V3</text>
+
+  <rect class="pin" x="300" y="268" width="72" height="24" rx="5"/>
+  <text x="318" y="285" class="pinTxt">GND</text>
+
+  <rect class="pin" x="300" y="328" width="72" height="24" rx="5"/>
+  <text x="305" y="345" class="pinTxt">GPIO21</text>
+
+  <rect class="pin" x="300" y="388" width="72" height="24" rx="5"/>
+  <text x="305" y="405" class="pinTxt">GPIO22</text>
+
+  <rect class="pin" x="300" y="448" width="72" height="24" rx="5"/>
+  <text x="310" y="465" class="pinTxt">GPIO4</text>
+
+  <rect class="pin" x="300" y="508" width="72" height="24" rx="5"/>
+  <text x="305" y="525" class="pinTxt">GPIO18</text>
+
+  <text x="80" y="590" class="subtxt">I2C: SDA=GPIO21, SCL=GPIO22</text>
+  <text x="80" y="612" class="subtxt">Buttons: active-low (A=GPIO, B=GND)</text>
+
+  <!-- OLED BLOCK: x=760 y=130 w=380 h=300 -->
+  <rect class="oled" x="760" y="130" width="380" height="300" rx="14"/>
+  <text x="878" y="170" class="blkTitle">OLED SSD1306</text>
+
+  <!-- OLED pins on left edge x=760 -->
+  <rect class="pin" x="760" y="208" width="72" height="24" rx="5"/>
+  <text x="778" y="225" class="pinTxt">VCC</text>
+
+  <rect class="pin" x="760" y="268" width="72" height="24" rx="5"/>
+  <text x="778" y="285" class="pinTxt">GND</text>
+
+  <rect class="pin" x="760" y="328" width="72" height="24" rx="5"/>
+  <text x="778" y="345" class="pinTxt">SDA</text>
+
+  <rect class="pin" x="760" y="388" width="72" height="24" rx="5"/>
+  <text x="778" y="405" class="pinTxt">SCL</text>
+
+  <!-- LEFT BUTTON: x=760 y=480 w=160 h=180 -->
+  <rect class="btn" x="760" y="480" width="160" height="180" rx="10"/>
+  <text x="800" y="512" class="btnTitle">LEFT BTN</text>
+  <rect class="pin" x="778" y="528" width="60" height="22" rx="5"/>
+  <text x="796" y="544" class="pinTxt">A</text>
+  <rect class="pin" x="778" y="572" width="60" height="22" rx="5"/>
+  <text x="796" y="588" class="pinTxt">B</text>
+
+  <!-- RIGHT BUTTON: x=980 y=480 w=160 h=180 -->
+  <rect class="btn" x="980" y="480" width="160" height="180" rx="10"/>
+  <text x="1012" y="512" class="btnTitle">RIGHT BTN</text>
+  <rect class="pin" x="998" y="528" width="60" height="22" rx="5"/>
+  <text x="1016" y="544" class="pinTxt">A</text>
+  <rect class="pin" x="998" y="572" width="60" height="22" rx="5"/>
+  <text x="1016" y="588" class="pinTxt">B</text>
+
+  <!-- SIGNAL WIRES (no labels) -->
+  <!-- 3V3 → VCC: y=220, straight -->
+  <path class="wire" stroke="#e53935" d="M372 220 H760"/>
+
+  <!-- GPIO21 → SDA: y=340, straight -->
+  <path class="wire" stroke="#2e7d32" d="M372 340 H760"/>
+
+  <!-- GPIO22 → SCL: y=400, straight -->
+  <path class="wire" stroke="#1565c0" d="M372 400 H760"/>
+
+  <!-- GPIO4 → LEFT BTN A (pin left x=778, y_center=539) -->
+  <!-- Route: from (372,460) right to x=660, down to y=539, right to x=778 -->
+  <path class="wire" stroke="#8e24aa" d="M372 460 H660 V539 H778"/>
+
+  <!-- GPIO18 → RIGHT BTN A: parallel path, simple direct to pin -->
+  <path class="wire" stroke="#ef6c00" d="M372 520 H950 V539 H998"/>
+
+  <!-- GROUND WIRES — each directly from button B pin separately to GND pin -->
+  <!-- OLED GND (x=760, y=280) straight left -->
+  <path class="wire" stroke="#546e7a" d="M760 280 H372"/>
+
+  <!-- LEFT BTN B: separate wire, distinct path to GND -->
+  <path class="wire" stroke="#546e7a" d="M778 583 H640 V270 H372"/>
+
+  <!-- RIGHT BTN B: down through gap between buttons, then to GND -->
+  <path class="wire" stroke="#546e7a" d="M998 583 H950 V700 H400 V290 H372"/>
+</svg>
