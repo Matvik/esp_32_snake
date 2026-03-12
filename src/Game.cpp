@@ -3,24 +3,18 @@
 //------------------------------------------------------------------------------
 // constructor
 //------------------------------------------------------------------------------
+// Configures runtime components and initializes state machine flags.
 SnakeGame::SnakeGame()
-    : display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1),
-      buttonLeft(BUTTON_LEFT_PIN),
+    : buttonLeft(BUTTON_LEFT_PIN),
       buttonRight(BUTTON_RIGHT_PIN),
+    core(GRID_WIDTH, GRID_HEIGHT),
+    renderer(SCREEN_WIDTH, SCREEN_HEIGHT, SCORE_AREA, CELL_SIZE),
       gameState(SPLASH),
-      foodReady(false),
       numObstacles(8),
-      snakeLength(0),
-      dir(1),
-      gameOver(false),
       turned(false),
       lastMove(0),
-      moveDelay(300),
       highScore(0),
       mouthOpen(true),
-      foodOn(false),
-      lastFoodBlink(0),
-      foodBlinkInterval(500),
       splashStartTime(0),
       leftButtonPressStart(0),
       wasLongPress(false),
@@ -28,18 +22,16 @@ SnakeGame::SnakeGame()
       bothPressed(false),
       anyPressed(false),
       showReleaseMessage(false)
-{
-    food.x = -1;
-    food.y = -1;
-}
+{}
 
 //------------------------------------------------------------------------------
 // public API
 //------------------------------------------------------------------------------
+// Initializes hardware, persisted score, random source, and gameplay core.
 void SnakeGame::begin()
 {
     Serial.begin(115200);
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+    renderer.begin();
     buttonLeft.setDebounceTime(40);
     buttonRight.setDebounceTime(40);
 
@@ -47,11 +39,16 @@ void SnakeGame::begin()
     highScore = prefs.getInt("hi", 0);
 
     randomSeed(micros());
+    core.setObstacleCount(numObstacles);
+    core.setRandomSource([&](int maxVal) -> int {
+        return maxVal > 0 ? random(maxVal) : 0;
+    });
 
     gameState = SPLASH;
     splashStartTime = millis();
 }
 
+// Runs one application tick: input processing and state machine transitions.
 void SnakeGame::run()
 {
     updateInput();
@@ -59,7 +56,7 @@ void SnakeGame::run()
     // State machine for game logic.
     switch (gameState) {
         case SPLASH: {
-            drawSplash();
+            renderer.drawSplash(SCREEN_WIDTH, SCREEN_HEIGHT, highScore, showReleaseMessage, splashStartTime);
 
             // Handle button presses for starting the game or resetting high score.
             bool leftPressed = buttonLeft.getState() == LOW;
@@ -86,7 +83,9 @@ void SnakeGame::run()
                 if (anyPressed) {
                     if (!wasLongPress && !bothPressed) {
                         gameState = PLAYING;
-                        resetGame();
+                        core.resetGame();
+                        turned = false;
+                        mouthOpen = true;
                     }
                     anyPressed = false;
                     bothPressed = false;
@@ -100,25 +99,30 @@ void SnakeGame::run()
         case PLAYING: {
             // Handle input for turning.
             if (!turned && buttonLeft.isPressed()) {
-                turnLeft();
+                core.turnLeft();
                 turned = true;
             }
 
             if (!turned && buttonRight.isPressed()) {
-                turnRight();
+                core.turnRight();
                 turned = true;
             }
 
             // Move the snake at the configured interval.
-            if (millis() - lastMove > moveDelay) {
+            if (millis() - lastMove > core.getMoveDelay()) {
                 lastMove = millis();
-                moveSnake();
-                drawGame();
+                int beforeLength = core.getSnakeLength();
+                core.moveSnake();
+                if (core.getSnakeLength() > beforeLength) {
+                    core.spawnFood();
+                }
+                mouthOpen = !mouthOpen;
+                renderer.drawGame(core, highScore, mouthOpen);
                 turned = false;
             }
 
             // Transition to collision animation when the run ends.
-            if (gameOver) {
+            if (core.isGameOver()) {
                 gameState = COLLISION;
                 collisionStartTime = millis();
             }
@@ -126,11 +130,11 @@ void SnakeGame::run()
             break;
 
         case COLLISION: {
-            drawCollision();
+            renderer.drawCollision(core, highScore, mouthOpen, collisionStartTime);
 
             // After the blink animation, save score and go to game over.
             if (millis() - collisionStartTime > COLLISION_BLINK_DURATION_MS) {
-                int currentScore = snakeLength - 5;
+                int currentScore = core.getSnakeLength() - snakecore::SnakeCore::INITIAL_SNAKE_LENGTH;
                 if (currentScore > highScore) {
                     highScore = currentScore;
                     saveHighScore();
@@ -142,7 +146,7 @@ void SnakeGame::run()
             break;
 
         case GAME_OVER: {
-            drawGameOver();
+            renderer.drawGameOver(core, SCREEN_WIDTH, SCREEN_HEIGHT, splashStartTime);
 
             // Wait for a button press to return to splash.
             if (buttonLeft.isPressed() || buttonRight.isPressed()) {
@@ -154,12 +158,14 @@ void SnakeGame::run()
     }
 }
 
+// Polls both button handlers each loop iteration.
 void SnakeGame::updateInput()
 {
     buttonLeft.loop();
     buttonRight.loop();
 }
 
+// Persists high score in non-volatile storage.
 void SnakeGame::saveHighScore()
 {
     prefs.putInt("hi", highScore);

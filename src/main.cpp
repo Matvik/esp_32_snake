@@ -6,10 +6,12 @@
 
 SnakeGame game;
 
+// Arduino setup hook initializes game runtime.
 void setup() {
     game.begin();
 }
 
+// Arduino loop hook executes one game tick.
 void loop() {
     game.run();
 }

@@ -1,97 +1,52 @@
 ﻿# ESP32 Snake Game
 
-A classic arcade Snake game for ESP32 with OLED SSD1306 display, two control buttons, screen animations, high score storage, and modular architecture on PlatformIO.
+A classic Snake game for ESP32 with an SSD1306 OLED display, two buttons, persistent high score storage, and a refactored architecture built around a testable gameplay core.
 
-## Game Description
+## Overview
 
-**Snake** is a classic arcade game implemented for the ESP32 microcontroller with an OLED display. The player controls a snake that moves across the game field, eats food to grow, and avoids collisions with walls, obstacles, or its own tail. The goal is to achieve the highest possible score.
+The project targets ESP32 using PlatformIO and Arduino framework. The codebase is split into three clear layers:
 
-### Key Features
-- **Game field**: 32x8 cells (128x64 pixels display).
-- **Snake**: Moves in four directions (up, down, left, right).
-- **Food**: Appears randomly on the field, blinks for visual effect.
-- **Obstacles**: Random obstacles on the field for increased difficulty.
-- **High Score**: Stored in ESP32 non-volatile memory.
-- **Game States**:
-  - **SPLASH**: Initial screen with title animation and high score.
-  - **PLAYING**: Main game.
-  - **COLLISION**: Collision animation (snake blink).
-  - **GAME_OVER**: Game over screen with final score.
-- **Controls**:
-  - Left button (GPIO 4): Turn snake left.
-  - Right button (GPIO 18): Turn snake right.
-  - Start game: Press any button on splash and release.
-  - Reset high score: Hold both buttons for 2 seconds on splash.
-  - After death: Press button on Game Over screen to return to splash.
-- **Visual Effects**:
-  - Splash animation.
-  - Blinking food.
-  - Blinking snake on collision.
-  - Centered elements on screen.
+- `SnakeGame`: application shell with input handling, state machine, and persistence.
+- `snake_core`: pure gameplay logic used both by firmware and unit tests.
+- `snake_render`: OLED rendering and screen animations.
 
-### How to Play
-1. After ESP32 startup, the splash screen appears with "SNAKE" animation and current high score.
-2. Press any button and release to start the game.
-3. Control the snake: left button turns left, right button turns right.
-4. Snake moves forward automatically; eat food (white squares) to grow.
-5. Avoid walls, obstacles, and your own tail.
-6. On collision, the game enters COLLISION state with blinking, then GAME_OVER.
-7. On GAME_OVER press button to return to splash.
-8. To reset the high score on splash, hold both buttons for 2 seconds – the game starts immediately after reset.
+This separation keeps the firmware simple while allowing most game rules to be tested on a desktop machine without ESP32 hardware.
 
-### Technical Details
-- **Platform**: ESP32 (DOIT ESP32 DEVKIT V1).
-- **Display**: SSD1306 OLED 128x64 pixels (I2C).
-- **Libraries**:
-  - Adafruit GFX and SSD1306 for graphics.
-  - ezButton for button handling.
-  - Preferences for data storage.
-- **Speed**: Snake moves at 300 ms intervals (varies by level).
-- **Memory**: High score stored in ESP32 NVS.
+## Gameplay
 
-## Project Setup
+### Features
+- Game field: `32 x 14` cells on a `128 x 64` OLED.
+- Two-button control: left turn and right turn.
+- Random food placement with collision-safe spawning.
+- Random obstacles generated on reset.
+- Animated splash, collision blink, and game-over screens.
+- High score storage in ESP32 NVS using `Preferences`.
+- Long-press reset of high score on splash screen.
 
-### Deployment
-1. Install VS Code.
-2. Install PlatformIO IDE extension.
-3. Clone the repository:
-  ```bash
-  git clone https://github.com/Matvik/esp_32_snake.git
-  ```
-4. Open the project folder in VS Code.
-5. Wait for PlatformIO to pull dependencies from `platformio.ini`.
-6. Connect ESP32 via USB.
-7. To build, run:
-  ```bash
-  pio run
-  ```
-8. To upload, run:
-  ```bash
-  pio run --target upload
-  ```
-9. To open serial monitor, run:
-  ```bash
-  pio device monitor -b 115200
-  ```
+### Controls
+- Left button: `GPIO 4`
+- Right button: `GPIO 18`
+- Start game: press and release any button on splash.
+- Reset high score: hold both buttons for 2 seconds on splash.
+- Return from Game Over: press any button.
 
-## Hardware Assembly
+## Hardware
 
-### Required Components
+### Required parts
 - 1 x ESP32 DOIT DEVKIT V1
-- 1 x OLED display SSD1306 128x64 I2C
-- 2 x push buttons without locking
-- 1 x breadboard or prototype board
+- 1 x SSD1306 OLED `128x64` I2C display
+- 2 x momentary push buttons
+- Breadboard or prototyping board
 - Jumper wires
-- USB cable for ESP32
+- USB cable
 
-### Wiring Diagram
+### Wiring
 
 ![ESP32 Snake Wiring](assets/esp32-snake-wiring.svg)
 
-Original vector diagram: `assets/esp32-snake-wiring.svg`.
+Vector source: `assets/esp32-snake-wiring.svg`
 
-#### OLED SSD1306 over I2C
-Standard I2C connection for ESP32:
+#### OLED
 
 | OLED | ESP32 |
 |---|---|
@@ -100,133 +55,169 @@ Standard I2C connection for ESP32:
 | SDA | GPIO 21 |
 | SCL | GPIO 22 |
 
-#### Control Buttons
-The code uses the following GPIO pins:
-- left button: `GPIO 4`
-- right button: `GPIO 18`
+#### Buttons
+- Left button signal -> `GPIO 4`
+- Right button signal -> `GPIO 18`
+- Second leg of each button -> `GND`
+- Button handling is active-low
 
-Recommended button wiring:
-- one button contact to corresponding GPIO
-- other button contact to `GND`
-- button logic is active-low, so pressed button reads as `LOW`
+### Assembly notes
+- Do not connect `5V` directly to ESP32 GPIO pins.
+- Power the OLED from `3.3V` unless your module explicitly supports another setup.
+- Keep button wires short to reduce false triggering.
+- Make sure ESP32, OLED, and both buttons share ground.
 
-If your button module doesn''t have built-in pull-up resistors, add external pull-ups to `3.3V` or adapt the circuit for your board.
+## Setup
 
-### Assembly Tips
-- Do not apply `5V` directly to ESP32 GPIO
-- OLED over I2C should be powered from `3.3V` if not advertised as 5V-safe
-- Ensure a common ground for ESP32, display, and buttons
-- Keep button wires short to minimize spurious triggers
+### Firmware build and upload
+1. Install VS Code.
+2. Install the PlatformIO IDE extension.
+3. Clone the repository:
 
-### Post-Assembly Verification
-1. Connect ESP32 via USB.
-2. Upload firmware with `pio run --target upload`.
-3. If screen doesn''t light up, verify display address `0x3C` and SDA/SCL lines.
-4. If buttons behave oddly or unreliably, check pull-up circuit and GND contact.
+```bash
+git clone https://github.com/Matvik/esp_32_snake.git
+```
 
-## Code Structure
+4. Open the project in VS Code.
+5. Wait for PlatformIO to install dependencies from `platformio.ini`.
+6. Connect the ESP32 board.
+7. Build firmware:
 
-The project is built on Arduino Framework using PlatformIO. Code is modular, split across files for better organization.
+```bash
+pio run
+```
 
-### Overall Architecture
-- **SnakeGame class**: Main class containing all game logic.
-- **State machine**: Game operates in four states, switching controlled by `run()` method.
-- **Modules**:
-  - `Game.cpp`: State handling and input.
-  - `GameLogic.cpp`: Game mechanics (movement, food, reset).
-  - `GameRender.cpp`: Screen drawing.
+8. Upload firmware:
 
-### Project Files
+```bash
+pio run --target upload
+```
 
-#### platformio.ini
-PlatformIO configuration file.
-- Defines ESP32 board.
-- Configures dependencies: Adafruit SSD1306, ezButton, Preferences.
-- Build and upload commands.
+9. Open serial monitor if needed:
 
-#### include/Game.h
-SnakeGame class header.
-- **Constants**:
-  - `SCREEN_WIDTH = 128`, `SCREEN_HEIGHT = 64`: Display size.
-  - `CELL_SIZE = 4`: Cell size in pixels.
-  - `GRID_WIDTH = 32`, `GRID_HEIGHT = 14`: Field size in cells.
-  - `BUTTON_LEFT_PIN = 4`, `BUTTON_RIGHT_PIN = 18`: Button pins.
-  - `LONG_PRESS_DURATION_MS = 2000`: Duration for long press (high score reset).
-  - `COLLISION_BLINK_DURATION_MS = 2000`: Duration of collision screen.
-- **Structures**:
-  - `Point`: Coordinates (x, y).
-- **Enumerations**:
-  - `GameState`: SPLASH, PLAYING, COLLISION, GAME_OVER.
-- **State Variables**:
-  - `snake[200]`: Array of snake points.
-  - `food`: Food coordinates.
-  - `obstacles[MAX_OBSTACLES]`: Obstacles.
-  - `snakeLength`, `dir`: Snake length and direction.
-  - `highScore`: High score.
-  - `gameState`: Current state.
-  - Flags: `foodOn`, `showReleaseMessage`, `wasLongPress`, etc.
-- **Methods**:
-  - Public: `SnakeGame()`, `begin()`, `run()`.
-  - Private: Logic and rendering methods.
+```bash
+pio device monitor -b 115200
+```
 
-#### src/main.cpp
-Arduino entry point.
-- Creates `SnakeGame` instance.
-- Calls `begin()` in `setup()`.
-- Calls `run()` in `loop()`.
+### Native unit tests
 
-#### src/Game.cpp
-Main state and input logic.
-- **Constructor**: Initializes variables, configures buttons.
-- **begin()**: Initializes display, loads high score.
-- **updateInput()**: Updates button states each loop tick.
-- **run()**: Main loop, switches by state.
-  - **SPLASH**:
-    - Draws splash.
-    - Handles input: release starts game, both buttons held resets high score.
-    - Shows "Release to start" and "Hold both for reset" messages.
-  - **PLAYING**:
-    - Handles turns (one per step only).
-    - Moves snake every `moveDelay` ms.
-    - Checks collisions.
-  - **COLLISION**:
-    - Draws blinking snake.
-    - Transitions to GAME_OVER after duration, saves high score.
-  - **GAME_OVER**:
-    - Draws game over screen.
-    - On button press transitions to SPLASH.
-- **Input Methods**: Uses `isPressed()` for events (turns), `getState()` for states (splash).
+The project also defines a `native` PlatformIO environment for desktop unit tests of the gameplay core.
 
-#### src/GameLogic.cpp
-Game mechanics.
-- **spawnFood()**: Generates food at random location not on snake or obstacles.
-- **resetGame()**: Resets snake, direction, speed, and randomly places obstacles.
-- **turnLeft() / turnRight()**: Changes direction if not just turned.
-- **moveSnake()**: Moves head, checks food/collisions, updates tail.
+Run tests with:
 
-#### src/GameRender.cpp
-Screen rendering.
-- **drawSplash()**: Title animation and high score, or messages depending on `showReleaseMessage`.
-- **drawGame()**: Draws field, snake, food (blinks), obstacles, score.
-- **drawCollision()**: Alternates between game frame and blank screen for blink effect.
-- **drawGameOver()**: Animated "Game Over" screen with current score.
+```bash
+pio test -e native
+```
 
-### Key Mechanisms
-- **Input handling**: ezButton with debounce. `isPressed()` for one-time events, `getState()` for held state.
-- **Timing**: `millis()` for movements, blinking, animations.
-- **Storage**: Preferences for high score.
-- **Randomness**: `randomSeed(micros())` for food and obstacles.
-- **Modularity**: Code split for easy maintenance.
+If `pio` is not available in your shell, run the command from a PlatformIO-enabled terminal inside VS Code.
 
-### Build and Run
-1. Install PlatformIO.
-2. Open project in VS Code with PlatformIO.
-3. Connect ESP32.
-4. Run `pio run --target upload`.
-5. Game starts automatically.
+## Architecture
+
+### Runtime flow
+- `src/main.cpp`: Arduino `setup()` / `loop()` entrypoint.
+- `src/Game.cpp`: state machine, button handling, high score storage, and integration of core + renderer.
+- `lib/snake_core`: pure gameplay logic.
+- `lib/snake_render`: OLED drawing and animations.
+
+### Core module
+
+Files:
+- `lib/snake_core/include/SnakeCore.h`
+- `lib/snake_core/src/SnakeCore.cpp`
+
+Responsibilities:
+- snake movement
+- wrap-around behavior
+- body and obstacle collision checks
+- obstacle generation on reset
+- food spawning
+- speed progression
+- deterministic behavior suitable for tests
+
+### Render module
+
+Files:
+- `lib/snake_render/include/SnakeRenderer.h`
+- `lib/snake_render/src/SnakeRenderer.cpp`
+
+Responsibilities:
+- gameplay frame rendering
+- splash screen animation
+- collision blink effect
+- game-over animation
+- food blinking
+- HUD drawing
+
+### Application shell
+
+Files:
+- `include/Game.h`
+- `src/Game.cpp`
+
+Responsibilities:
+- state transitions: `SPLASH`, `PLAYING`, `COLLISION`, `GAME_OVER`
+- button polling with `ezButton`
+- long-press handling
+- persistent high score storage with `Preferences`
+- wiring together core and renderer
+
+## Tests
+
+Test file:
+- `test/test_snake_core/test_main.cpp`
+
+Current unit tests cover:
+- initial reset state
+- direction changes
+- movement and wrap-around
+- self-collision and obstacle collision
+- food consumption and speed-up
+- minimum speed clamp
+- safe food spawning
+- reset layout validity
+- long-run movement invariants
+- repeated reset invariants
+
+The tests are focused on `SnakeCore`, because it contains the gameplay rules and has no dependency on ESP32 display or button hardware.
+
+## Project structure
+
+```text
+include/
+  Game.h
+lib/
+  snake_core/
+    include/
+      SnakeCore.h
+    src/
+      SnakeCore.cpp
+  snake_render/
+    include/
+      SnakeRenderer.h
+    src/
+      SnakeRenderer.cpp
+src/
+  Game.cpp
+  main.cpp
+test/
+  test_snake_core/
+    test_main.cpp
+assets/
+  esp32-snake-wiring.svg
+platformio.ini
+README.md
+README.uk.md
+```
+
+## Notes
+
+- The old split into `GameLogic.cpp` and `GameRender.cpp` has been removed.
+- Gameplay logic now lives in `snake_core`.
+- Rendering logic now lives in `snake_render`.
+- Method-level comments were added across the project to make navigation easier.
 
 ---
 
-## Українська версія
+## Ukrainian version
 
-Повна документація також доступна [українською мовою](README.uk.md).
+Full Ukrainian documentation is available in [README.uk.md](README.uk.md).

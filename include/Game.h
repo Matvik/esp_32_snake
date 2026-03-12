@@ -2,28 +2,21 @@
 #define GAME_H
 
 #include <Arduino.h>
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 #include <ezButton.h>
 #include <Preferences.h>
-
-// -----------------------------------------------------------------------------
-// Struct for coordinates on the game grid
-// -----------------------------------------------------------------------------
-struct Point {
-    int x, y;
-    Point() : x(-1), y(-1) {}
-    Point(int px, int py) : x(px), y(py) {}
-};
+#include "SnakeCore.h"
+#include "SnakeRenderer.h"
 
 // -----------------------------------------------------------------------------
 // Main game class managing Snake game logic, rendering, and input
 // -----------------------------------------------------------------------------
 class SnakeGame {
 public:
+    // Constructs game controller and owned runtime components.
     SnakeGame();
+    // Initializes hardware and persisted state.
     void begin();
+    // Executes one main-loop tick.
     void run();
 
 private:
@@ -48,7 +41,6 @@ private:
     static constexpr int GRID_WIDTH = SCREEN_WIDTH / CELL_SIZE;  // Number of cells horizontally
     static constexpr int GRID_HEIGHT = (SCREEN_HEIGHT - SCORE_AREA) / CELL_SIZE;  // Number of cells vertically
 
-    static constexpr int MAX_OBSTACLES = 12;          // Maximum number of obstacles
     static constexpr int BUTTON_LEFT_PIN = 4;         // GPIO pin for left button
     static constexpr int BUTTON_RIGHT_PIN = 18;       // GPIO pin for right button
 
@@ -58,36 +50,19 @@ private:
     // -----------------------------------------------------------------------------
     // Hardware interfaces
     // -----------------------------------------------------------------------------
-    Adafruit_SSD1306 display;   // OLED display object
     ezButton buttonLeft;        // Left button handler
     ezButton buttonRight;       // Right button handler
     Preferences prefs;          // Non-volatile storage for high score
+    snakecore::SnakeCore core;  // Pure gameplay core used by runtime and tests
+    snakerender::SnakeRenderer renderer;
 
-    // -----------------------------------------------------------------------------
-    // Game state
-    // -----------------------------------------------------------------------------
-    Point snake[200];
-    Point food;
-    bool foodReady;
-
-    Point obstacles[MAX_OBSTACLES];
+    // Number of random obstacles generated per run.
     int numObstacles;
 
-    int snakeLength;
-    int dir;
-    bool gameOver;
     bool turned;
     unsigned long lastMove;
-    float moveDelay;
     int highScore;
     bool mouthOpen;
-
-    // -----------------------------------------------------------------------------
-    // Food blinking
-    // -----------------------------------------------------------------------------
-    bool foodOn;
-    unsigned long lastFoodBlink;
-    unsigned long foodBlinkInterval;
 
     // -----------------------------------------------------------------------------
     // Splash screen animation
@@ -108,34 +83,14 @@ private:
     // -----------------------------------------------------------------------------
     unsigned long collisionStartTime;  // Timestamp when collision started
 
-    // -----------------------------------------------------------------------------
-    // Game logic methods
-    // -----------------------------------------------------------------------------
-    void spawnFood();
-    void resetGame();
-    void turnLeft();
-    void turnRight();
-    void moveSnake();
+    // Persists current high score to non-volatile storage.
     void saveHighScore();
-
-    // -----------------------------------------------------------------------------
-    // Rendering
-    // -----------------------------------------------------------------------------
-    void drawEyes(int x, int y);
-    void drawMouth(int x, int y);
-    void drawSnake();
-    void drawObstacles();
-    void drawScore();
-    void drawFood();
-    void drawGame();
-    void drawSplash();
-    void drawCollision();
-    void drawGameOver();
 
     // -----------------------------------------------------------------------------
     // Input handling
     // -----------------------------------------------------------------------------
-    void updateInput();  // Update button states (call in main loop)
+    // Updates debounced button states.
+    void updateInput();
 };
 
 #endif // GAME_H
